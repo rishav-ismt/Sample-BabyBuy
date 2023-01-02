@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="np.com.rishavchudal.myapplication">
+    package="np.com.yourname.babybuy">
 
     <uses-feature android:name="android.hardware.camera.any" />
 
@@ -33,31 +33,31 @@
             android:value="AIzaSyA8hetcWFYaajfoBFv8k04U3n-NI5i8kvU" />
 
         <activity
-            android:name=".dashboard.MapsActivity"
+            android:name="np.com.yourname.babybuy.dashboard.MapsActivity"
             android:exported="false" />
         <activity
-            android:name=".dashboard.CameraActivity"
+            android:name="np.com.yourname.babybuy.dashboard.CameraActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:name=".dashboard.DetailPageActivity"
+            android:name="np.com.yourname.babybuy.dashboard.DetailPageActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:name=".dashboard.AddProductActivity"
+            android:name="np.com.yourname.babybuy.dashboard.AddProductActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
                 android:value="" />
         </activity>
         <activity
-            android:name=".SplashScreenActivity"
+            android:name="np.com.yourname.babybuy.SplashScreenActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -70,10 +70,10 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".dashboard.DashboardActivity"
+            android:name="np.com.yourname.babybuy.dashboard.DashboardActivity"
             android:exported="false" />
         <activity
-            android:name=".LoginActivity"
+            android:name="np.com.yourname.babybuy.LoginActivity"
             android:exported="true" />
 
     </application>

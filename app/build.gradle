@@ -7,7 +7,7 @@ android {
     compileSdk 32
 
     defaultConfig {
-        applicationId "np.com.rishavchudal.myapplication"
+        applicationId "np.com.yourname.babybuy"
         minSdk 24
         targetSdk 32
         versionCode 24010000
