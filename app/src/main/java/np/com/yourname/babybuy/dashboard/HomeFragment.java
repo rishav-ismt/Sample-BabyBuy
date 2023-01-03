@@ -110,16 +110,10 @@ public class HomeFragment extends Fragment implements
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 1001) {
             //This is result from the AddProductActivity
-            getProductsFromDb();
+            getProducts();
         } else if (requestCode == 1002) {
             //This is result from the DetailPageActivity
-            if (resultCode == 2002) {
-                //Operation Success
-                //load recycler view
-            } else {
-                //Operation failed
-                //show error message
-            }
+            getProducts();
         }
     }
 

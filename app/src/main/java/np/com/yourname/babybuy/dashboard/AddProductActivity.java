@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -49,6 +50,8 @@ public class AddProductActivity extends AppCompatActivity {
     private TextInputEditText textInputEditTextProductPrice;
     private TextInputLayout textInputLayoutProductLocation;
     private TextInputEditText textInputEditTextProductLocation;
+    private LinearLayout llMarkAsPurchased;
+    private CheckBox cbMarkAsPurchased;
     private MaterialButton materialButtonAddProduct;
 
     private BottomSheetDialog pickImageBottomSheetDialog;
@@ -63,13 +66,22 @@ public class AddProductActivity extends AppCompatActivity {
     private static final int GALLERY_PERMISSION_REQUEST_CODE = 11;
     private String imageUriPathToSave = "";
     private ProductLocation productLocation;
+    private boolean isUpdate = false;
+    private Product productToUpdate;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_product);
+        Intent intent = getIntent();
+        Product product = (Product) intent.getSerializableExtra("product_data");
+        if (product != null) {
+            isUpdate = true;
+            this.productToUpdate = product;
+        }
         initViews();
         setViewsClicks();
+        assignViewsWithProductDataIfUpdate(product);
     }
 
     @Override
@@ -120,7 +132,16 @@ public class AddProductActivity extends AppCompatActivity {
         textInputEditTextProductPrice = findViewById(R.id.tiet_product_price);
         textInputLayoutProductLocation = findViewById(R.id.til_product_location);
         textInputEditTextProductLocation = findViewById(R.id.tiet_product_location);
+        llMarkAsPurchased = findViewById(R.id.ll_mark_purchased);
+        cbMarkAsPurchased = findViewById(R.id.cb_mark_as_purchased);
         materialButtonAddProduct = findViewById(R.id.mb_add_product);
+
+        if (isUpdate) {
+            llMarkAsPurchased.setVisibility(View.VISIBLE);
+            materialButtonAddProduct.setText("Update");
+        } else {
+            llMarkAsPurchased.setVisibility(View.GONE);
+        }
     }
 
     private void setViewsClicks() {
@@ -153,6 +174,24 @@ public class AddProductActivity extends AppCompatActivity {
         });
     }
 
+    private void assignViewsWithProductDataIfUpdate(Product product) {
+        if (isUpdate) {
+            imageUriPathToSave = product.image;
+            loadThumbnailImage();
+
+            textInputEditTextProductName.setText(product.title);
+            textInputEditTextProductDescription.setText(product.description);
+            textInputEditTextProductPrice.setText(product.price);
+
+            cbMarkAsPurchased.setChecked(product.markAsPurchased);
+
+            productLocation = new ProductLocation();
+            productLocation.latitude = product.latitude;
+            productLocation.longitude = product.longitude;
+            updateLocationTextInputEditText(productLocation);
+        }
+    }
+
     private void showPageExitAlertDialog() {
         AlertDialog exitAlertDialog = new AlertDialog.Builder(AddProductActivity.this)
                 .setTitle("Exit")
@@ -161,7 +200,7 @@ public class AddProductActivity extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         dialogInterface.dismiss();
-                        finishWithResult(RESULT_CODE_FAILED_ADD_PRODUCT_ACTIVITY);
+                        finishWithResult(RESULT_CODE_FAILED_ADD_PRODUCT_ACTIVITY, null);
                     }
                 })
                 .setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -228,6 +267,8 @@ public class AddProductActivity extends AppCompatActivity {
 
     private void startActivityForResultFromGalleryToPickImage() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         startActivityForResult(intent, REQUEST_CODE_GALLERY_ACTIVITY);
     }
 
@@ -260,12 +301,13 @@ public class AddProductActivity extends AppCompatActivity {
         } else if (productLocation == null) {
             showToastWithMessage("Please mark a valid location to buy the product.");
         } else {
-            addProductToDb(
+            addOrUpdateProductToDb(
                     productName,
                     productDescription,
                     productPrice,
                     imageUriPathToSave,
-                    productLocation
+                    productLocation,
+                    cbMarkAsPurchased.isChecked()
             );
         }
     }
@@ -290,26 +332,35 @@ public class AddProductActivity extends AppCompatActivity {
     }
 
     private void loadThumbnailImage() {
-        Bitmap bitmap;
-        try {
-            bitmap = MediaStore.Images.Media.getBitmap(
-                    getContentResolver(),
-                    Uri.parse(imageUriPathToSave)
-            );
-            bitmap = BitmapScalar.stretchToFill(
-                    bitmap,
-                    ibAddImage.getMeasuredWidth(),
-                    ibAddImage.getMeasuredHeight()
-            );
-            ibAddImage.setImageBitmap(bitmap);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        ibAddImage.post(new Runnable() {
+            @Override
+            public void run() {
+                Bitmap bitmap;
+                try {
+                    bitmap = MediaStore.Images.Media.getBitmap(
+                            getContentResolver(),
+                            Uri.parse(imageUriPathToSave)
+                    );
+                    bitmap = BitmapScalar.stretchToFill(
+                            bitmap,
+                            ibAddImage.getWidth(),
+                            ibAddImage.getHeight()
+                    );
+                    ibAddImage.setImageBitmap(bitmap);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     private void handleResultFromGalleryActivity(int resultCode, Intent intentData) {
         if (resultCode == Activity.RESULT_OK) {
             imageUriPathToSave = intentData.getData().toString();
+            getContentResolver().takePersistableUriPermission(
+                    Uri.parse(imageUriPathToSave),
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+            );
             loadThumbnailImage();
         } else {
             imageUriPathToSave = "";
@@ -321,30 +372,71 @@ public class AddProductActivity extends AppCompatActivity {
         if (resultCode == MapsActivity.MAPS_ACTIVITY_SUCCESS_RESULT_CODE) {
             productLocation = (ProductLocation) intent
                     .getSerializableExtra(MapsActivity.EXTRA_PRODUCT_LOCATION);
-            String latLngData = "Lat : " +
-                    productLocation.latitude +
-                    ", Lng :" +
-                    productLocation.longitude;
-            textInputEditTextProductLocation.setText(latLngData);
+            updateLocationTextInputEditText(productLocation);
         } else {
             productLocation = null;
             textInputEditTextProductLocation.setText("");
         }
     }
 
-    private void addProductToDb(
+    private void updateLocationTextInputEditText(ProductLocation productLocation) {
+        String latLngData = "Lat : " +
+                productLocation.latitude +
+                ", Lng :" +
+                productLocation.longitude;
+        textInputEditTextProductLocation.setText(latLngData);
+    }
+
+    private void addOrUpdateProductToDb(
             String title,
             String description,
             String price,
             String image,
-            ProductLocation productLocation
+            ProductLocation productLocation,
+            boolean isMarkAsPurchased
     ) {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                insertProductInDb(title, description, price, image, productLocation);
+                if (isUpdate) {
+                    updateProductInDb(title, description, price, image, productLocation, isMarkAsPurchased);
+                } else {
+                    insertProductInDb(title, description, price, image, productLocation, isMarkAsPurchased);
+                }
             }
         }).start();
+    }
+
+    private void updateProductInDb(
+            String title,
+            String description,
+            String price,
+            String image,
+            ProductLocation productLocation,
+            boolean isMarkAsPurchased
+    ) {
+        try {
+            BabyBuyDatabase babyBuyDatabase = BabyBuyDatabase.getInstance(getApplicationContext());
+            ProductDao productDao = babyBuyDatabase.getProductDao();
+            productToUpdate.title = title;
+            productToUpdate.description = description;
+            productToUpdate.price = price;
+            productToUpdate.image = image;
+            productToUpdate.latitude = productLocation.latitude;
+            productToUpdate.longitude = productLocation.longitude;
+            productToUpdate.markAsPurchased = isMarkAsPurchased;
+            productDao.updateProduct(productToUpdate);
+            finishActivityInRunnableThread(
+                    RESULT_CODE_SUCCESS_ADD_PRODUCT_ACTIVITY,
+                    productToUpdate
+            );
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            finishActivityInRunnableThread(
+                    RESULT_CODE_FAILED_ADD_PRODUCT_ACTIVITY,
+                    productToUpdate
+            );
+        }
     }
 
     private void insertProductInDb(
@@ -352,7 +444,8 @@ public class AddProductActivity extends AppCompatActivity {
             String description,
             String price,
             String image,
-            ProductLocation productLocation
+            ProductLocation productLocation,
+            boolean isMarkAsPurchased
     ) {
         try {
             BabyBuyDatabase babyBuyDatabase = BabyBuyDatabase.getInstance(getApplicationContext());
@@ -364,25 +457,38 @@ public class AddProductActivity extends AppCompatActivity {
             product.image = image;
             product.latitude = productLocation.latitude;
             product.longitude = productLocation.longitude;
+            product.markAsPurchased = isMarkAsPurchased;
             productDao.insertProduct(product);
-            finishActivityInRunnableThread(RESULT_CODE_SUCCESS_ADD_PRODUCT_ACTIVITY);
+            finishActivityInRunnableThread(
+                    RESULT_CODE_SUCCESS_ADD_PRODUCT_ACTIVITY,
+                    null
+            );
         } catch (Exception exception) {
             exception.printStackTrace();
-            finishActivityInRunnableThread(RESULT_CODE_FAILED_ADD_PRODUCT_ACTIVITY);
+            finishActivityInRunnableThread(
+                    RESULT_CODE_FAILED_ADD_PRODUCT_ACTIVITY,
+                    null
+            );
         }
     }
 
-    private void finishActivityInRunnableThread(int resultCode) {
+    private void finishActivityInRunnableThread(int resultCode, Product product) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                finishWithResult(resultCode);
+                finishWithResult(resultCode, product);
             }
         });
     }
 
-    private void finishWithResult(int resultCode) {
-        setResult(resultCode);
+    private void finishWithResult(int resultCode, Product product) {
+        if (isUpdate) {
+            Intent intent = new Intent();
+            intent.putExtra("updated_product_data", product);
+            setResult(resultCode, intent);
+        } else {
+            setResult(resultCode);
+        }
         finish();
     }
 

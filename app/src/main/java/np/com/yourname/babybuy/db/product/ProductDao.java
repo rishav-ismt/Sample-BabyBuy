@@ -25,6 +25,6 @@ public interface ProductDao {
     @Query("Select * from product")
     List<Product> getAllProducts();
 
-    @Query("Select * from product where mark_as_purchased = 'true'")
+    @Query("Select * from product where mark_as_purchased = 1")
     List<Product> getPurchasedProducts();
 }
