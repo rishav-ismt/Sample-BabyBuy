@@ -15,6 +15,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
 
 import np.com.yourname.babybuy.R;
+import np.com.yourname.babybuy.db.user.User;
 
 public class DashboardActivity extends AppCompatActivity {
     public static String KEY_USER_EMAIL = "user_email";
@@ -29,15 +30,17 @@ public class DashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
-        homeFragment = HomeFragment.newInstance();
+        User user = getLoggedUserDataFromSharedPreference();
+        homeFragment = HomeFragment.newInstance(user);
         purchasedFragment = PurchasedFragment.newInstance();
-        profileFragment = ProfileFragment.newInstance();
+        profileFragment = ProfileFragment.newInstance(user);
         bottomNavigationView = findViewById(R.id.bottom_nav_view);
         bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(
                     @NonNull MenuItem item
             ) {
+                item.setChecked(true);
                 switch (item.getItemId()) {
                     case R.id.home:
                         loadFragmentInContainer(homeFragment);
@@ -57,48 +60,23 @@ public class DashboardActivity extends AppCompatActivity {
                 return false;
             }
         });
-
-
-
+        bottomNavigationView.setSelectedItemId(R.id.home);
 
         //Reading data from SharedPreferences
+
+    }
+
+    private User getLoggedUserDataFromSharedPreference() {
+        User user = new User();
         SharedPreferences sharedPreferences = getSharedPreferences(
-                "login_pref",
+                "user_pref",
                 MODE_PRIVATE
         );
-        String defaultEmail = "";
-        String defaultPassword = "";
-        String email = sharedPreferences.getString("email_data", defaultEmail);
-        String password = sharedPreferences.getString(
-                "password_data",
-                defaultPassword
-        );
-        Toast.makeText(this,
-                "Email ::: " + email + "\nPassword ::: " + password
-                ,
-                Toast.LENGTH_SHORT
-        ).show();
-
-
-
-
-
-
-
-//        Intent intent = getIntent();
-//        String email = intent.getStringExtra(KEY_USER_EMAIL);
-//        String password = intent.getStringExtra(KEY_USER_PASSWORD);
-
-//        UserCredentials userCredentials = (UserCredentials) intent.getSerializableExtra("user_credentials");
-//        String userData = "Email ::: " +
-//                userCredentials.getUserEmail() +
-//                ", Password ::: " +
-//                userCredentials.getUserPassword();
-//        Toast.makeText(
-//                DashboardActivity.this,
-//                userData,
-//                Toast.LENGTH_LONG
-//        ).show();
+        String defaultValue = "";
+        user.email = sharedPreferences.getString("logged_user_email", defaultValue);
+        user.fullName = sharedPreferences.getString("logged_user_full_name", defaultValue);
+        user.address = sharedPreferences.getString("logged_user_address", defaultValue);
+        return user;
     }
 
     /*

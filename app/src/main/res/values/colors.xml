@@ -8,5 +8,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="dark_gray">#aaaaaa</color>
-    <color name="light_gray">#dddddd</color>
+    <color name="light_gray">#66dddddd</color>
+    <color name="millennial_pink">#33FFD1DC</color>
 </resources>

@@ -5,8 +5,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".dashboard.DashboardActivity"
-    android:background="@color/purple_200">
+    android:background="@color/millennial_pink"
+    tools:context=".dashboard.DashboardActivity">
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragment_container_view"
@@ -24,6 +24,10 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:menu="@menu/bottom_nav_menu"/>
+        app:itemIconTint="@drawable/bottom_nav_selected"
+        app:itemTextColor="@drawable/bottom_nav_selected"
+        android:backgroundTint="@color/white"
+        app:labelVisibilityMode="labeled"
+        app:menu="@menu/bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

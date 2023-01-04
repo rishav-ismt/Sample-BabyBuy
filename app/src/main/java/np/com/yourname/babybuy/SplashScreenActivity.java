@@ -25,7 +25,7 @@ public class SplashScreenActivity extends AppCompatActivity {
 
     private void checkUserLogin() {
         SharedPreferences sharedPreferences = getSharedPreferences(
-                "login_pref",
+                "user_pref",
                 MODE_PRIVATE
         );
         boolean defaultValue = false;
@@ -41,7 +41,7 @@ public class SplashScreenActivity extends AppCompatActivity {
         } else {
             intent = new Intent(
                     SplashScreenActivity.this,
-                    LoginActivity.class
+                    HomeScreenActivity.class
             );
         }
         startActivity(intent);

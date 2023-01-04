@@ -64,19 +64,17 @@ public class HomeRecyclerAdapter extends RecyclerView.Adapter<HomeRecyclerViewHo
         Product product = productList.get(position);
         holder.getTvProductTitle().setText(product.title);
         holder.getTvProductDescription().setText(product.description);
+        holder.getTvProductPrice().setText("£ " + product.price);
+        if (product.markAsPurchased) {
+            holder.getIvPurchased().setVisibility(View.VISIBLE);
+        } else {
+            holder.getIvPurchased().setVisibility(View.GONE);
+        }
         loadImageWithGlide(holder.getIvProductImage(), product.image);
-//        holder.getIvProductImage().setImageBitmap(
-//                getBitmapForImageView(holder.getIvProductImage(), product.image)
-//        );
         holder.getClProductRootLayout().setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Toast.makeText(
-                                context,
-                                "Item at Position "+ holder.getAdapterPosition() + " is clicked",
-                                Toast.LENGTH_SHORT
-                        ).show();
                         listener.onItemClicked(product);
                     }
                 }

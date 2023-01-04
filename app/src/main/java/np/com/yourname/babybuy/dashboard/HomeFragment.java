@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -23,6 +24,7 @@ import np.com.yourname.babybuy.dashboard.recyclerview.HomeRecyclerAdapter;
 import np.com.yourname.babybuy.db.BabyBuyDatabase;
 import np.com.yourname.babybuy.db.product.Product;
 import np.com.yourname.babybuy.db.product.ProductDao;
+import np.com.yourname.babybuy.db.user.User;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -31,11 +33,16 @@ import np.com.yourname.babybuy.db.product.ProductDao;
  */
 public class HomeFragment extends Fragment implements
         HomeRecyclerAdapter.IHomeRecyclerAdapterListener {
+    private TextView tvWelcome, tvNoItems;
     private FloatingActionButton fabAdd;
     private RecyclerView recyclerView;
+    private User loggedInUser;
 
-    public static HomeFragment newInstance() {
+    public static HomeFragment newInstance(User user) {
         HomeFragment fragment = new HomeFragment();
+        Bundle argument = new Bundle();
+        argument.putSerializable("logged_user", user);
+        fragment.setArguments(argument);
         return fragment;
     }
 
@@ -56,6 +63,8 @@ public class HomeFragment extends Fragment implements
                 container,
                 false
         );
+        tvNoItems = view.findViewById(R.id.tv_no_items);
+        tvWelcome = view.findViewById(R.id.tv_welcome);
         fabAdd = view.findViewById(R.id.fab_add);
         recyclerView = view.findViewById(R.id.recycler_view_home);
         return view;
@@ -67,14 +76,18 @@ public class HomeFragment extends Fragment implements
             @Nullable Bundle savedInstanceState
     ) {
         super.onViewCreated(view, savedInstanceState);
+        String welcomeMessage;
+        User loggedInUser = (User) requireArguments().getSerializable("logged_user");
+        if (loggedInUser != null) {
+             welcomeMessage = "Hi " + loggedInUser.fullName + ",\n\n" + "Welcome Again !!";
+        } else {
+            welcomeMessage = "Hi User," + "\n\n" + "Welcome Again !!";
+        }
+        tvWelcome.setText(welcomeMessage);
+
         fabAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(
-                        requireActivity(),
-                        "Fab is clicked",
-                        Toast.LENGTH_SHORT
-                ).show();
                 loadAddProductActivity();
             }
         });
@@ -82,6 +95,11 @@ public class HomeFragment extends Fragment implements
     }
     
     private void loadProductsInRecyclerView(List<Product> products) {
+        if (products.isEmpty()) {
+            tvNoItems.setVisibility(View.VISIBLE);
+        } else {
+            tvNoItems.setVisibility(View.GONE);
+        }
         HomeRecyclerAdapter recyclerAdapter = new HomeRecyclerAdapter(
                 requireActivity(),
                 products,

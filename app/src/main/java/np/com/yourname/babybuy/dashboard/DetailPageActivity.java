@@ -1,17 +1,27 @@
 package np.com.yourname.babybuy.dashboard;
 
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.provider.ContactsContract;
 import android.provider.MediaStore;
+import android.telephony.SmsManager;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
@@ -25,7 +35,12 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import np.com.yourname.babybuy.R;
 import np.com.yourname.babybuy.db.BabyBuyDatabase;
@@ -38,9 +53,11 @@ public class DetailPageActivity extends AppCompatActivity implements OnMapReadyC
     private ImageButton ibBack;
     private ImageView ivDetailImage;
     private TextView tvProductTitle, tvProductPrice, tvProductDescription;
-    private ImageButton ibEdit, ibDelete, ibShare;
+    private ImageButton ibEdit, ibDelete, ibSendSms;
     private MaterialCheckBox cbMarkAsPurchased;
     private GoogleMap googleMap;
+    private AlertDialog sendSmsAlertDialog;
+    private TextInputEditText tietSendSmsMobileNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,6 +92,36 @@ public class DetailPageActivity extends AppCompatActivity implements OnMapReadyC
                     updateMapLocation(product, googleMap);
                 }
             }
+        } else if (requestCode == 5001) {
+            //Result for Contacts App Activity
+            if (data != null) {
+                fetchContactNumberFromData(data);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == 111) {
+            boolean areAllPermissionGranted = false;
+            for (String permission : permissions) {
+                if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+                    areAllPermissionGranted = true;
+                } else {
+                    areAllPermissionGranted = false;
+                    break;
+                }
+            }
+            if (areAllPermissionGranted) {
+                showSendSmsAlertDialog();
+            } else {
+                Toast.makeText(
+                        getApplicationContext(),
+                        "You need to allow SMS permission to send SMS",
+                        Toast.LENGTH_LONG
+                ).show();
+            }
         }
     }
 
@@ -92,7 +139,7 @@ public class DetailPageActivity extends AppCompatActivity implements OnMapReadyC
         cbMarkAsPurchased = findViewById(R.id.cb_mark_as_purchased);
         ibEdit = findViewById(R.id.ib_edit);
         ibDelete = findViewById(R.id.ib_delete);
-        ibShare = findViewById(R.id.ib_share);
+        ibSendSms = findViewById(R.id.ib_share);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_map);
@@ -123,6 +170,13 @@ public class DetailPageActivity extends AppCompatActivity implements OnMapReadyC
             @Override
             public void onClick(View view) {
                 alertUserBeforeDeleting();
+            }
+        });
+
+        ibSendSms.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                checkForSmsPermissions();
             }
         });
     }
@@ -246,6 +300,175 @@ public class DetailPageActivity extends AppCompatActivity implements OnMapReadyC
             }
         }).start();
     }
+
+    private void checkForSmsPermissions() {
+        if (areSmsPermissionsGranted()) {
+            showSendSmsAlertDialog();
+        } else {
+            requestPermissions(
+                    smsPermissionsList().toArray(new String[0]),
+                    111
+            );
+        }
+    }
+
+    private boolean areSmsPermissionsGranted() {
+        boolean areAllPermissionGranted = false;
+        for (String permission : smsPermissionsList()) {
+            if (ContextCompat.checkSelfPermission(this, permission)
+                    == PackageManager.PERMISSION_GRANTED) {
+                areAllPermissionGranted = true;
+            } else {
+                areAllPermissionGranted = false;
+                break;
+            }
+        }
+        return areAllPermissionGranted;
+    }
+
+    private List<String> smsPermissionsList() {
+        List<String> smsPermissions = new ArrayList<>();
+        smsPermissions.add(Manifest.permission.READ_CONTACTS);
+        smsPermissions.add(Manifest.permission.SEND_SMS);
+        return smsPermissions;
+    }
+
+    private void showSendSmsAlertDialog() {
+        sendSmsAlertDialog = new AlertDialog.Builder(DetailPageActivity.this).create();
+        LayoutInflater layoutInflater = this.getLayoutInflater();
+        View alertDialogView = layoutInflater.inflate(R.layout.layout_send_sms, null);
+        sendSmsAlertDialog.setView(alertDialogView);
+        sendSmsAlertDialog.setTitle("Send SMS");
+        sendSmsAlertDialog.setCancelable(true);
+
+        tietSendSmsMobileNumber = alertDialogView.findViewById(R.id.tiet_enter_mobile);
+        ImageButton ibSelectContact = alertDialogView.findViewById(R.id.ib_select_contact);
+        MaterialButton mbSendSmsCancel = alertDialogView.findViewById(R.id.mb_cancel);
+        MaterialButton mbSendSms = alertDialogView.findViewById(R.id.mb_send_sms);
+
+        ibSelectContact.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startContactsAppActivityToPickContact();
+            }
+        });
+
+        mbSendSmsCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                sendSmsAlertDialog.dismiss();
+            }
+        });
+
+        mbSendSms.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                validateMobileNumber();
+            }
+        });
+
+
+        sendSmsAlertDialog.show();
+    }
+
+    private void startContactsAppActivityToPickContact() {
+        Intent pickContact = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        pickContact.setType(ContactsContract.CommonDataKinds.Phone.CONTENT_TYPE);
+        startActivityForResult(pickContact, 5001);
+    }
+
+    private void fetchContactNumberFromData(Intent data) {
+        Uri contactUri = data.getData();
+
+        // Specify which fields you want
+        // your query to return values for
+        String[] queryFields = new String[]{
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+        };
+
+        // Perform your query - the contactUri
+        // is like a "where" clause here
+        try (Cursor cursor = this.getContentResolver()
+                .query(contactUri, null, null, null, null)) {
+            // Double-check that you
+            // actually got results
+            if (cursor.getCount() == 0) return;
+
+            // Pull out the first column of
+            // the first row of data
+            // that is your contact's name
+            cursor.moveToFirst();
+
+            int contactNumberIndex = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
+            String contactNumber = cursor.getString(contactNumberIndex);
+            tietSendSmsMobileNumber.setText(contactNumber);
+
+        }
+    }
+
+    private void validateMobileNumber() {
+        String mobileNumber = tietSendSmsMobileNumber.getText().toString().trim();
+        if (mobileNumber.isEmpty()) {
+            tietSendSmsMobileNumber.setError("Please enter a mobile number");
+            return;
+        }
+        String message = prepareSms();
+        sendSmsAlertDialog.dismiss();
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Sending SMS to " + mobileNumber);
+        progressDialog.show();
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                sendSmsToMobileNumber(mobileNumber, message);
+                progressDialog.dismiss();
+            }
+        }, 1500);
+    }
+
+    private String prepareSms() {
+        String message = "Item: " + product.title + "\n"
+                + "Price: " + product.price + "\n"
+                + "Description: " + product.description;
+
+        if (message.length() > 100) {
+            message = message.substring(0, 100);
+        }
+        return message;
+    }
+
+    private void sendSmsToMobileNumber(String mobileNumber, String message) {
+        try {
+            SmsManager smsManager = SmsManager.getDefault();
+            smsManager.sendTextMessage(
+                    mobileNumber,
+                    null,
+                    message,
+                    null,
+                    null
+            );
+            Toast.makeText(
+                    getApplicationContext(),
+                    "SMS sent successfully",
+                    Toast.LENGTH_LONG
+            ).show();
+        } catch (Exception exception) {
+            exception.printStackTrace();
+            Toast.makeText(
+                    getApplicationContext(),
+                    "Failed to send SMS. Please try again...",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
+//        Intent intent = new Intent(Intent.ACTION_SENDTO);
+//        intent.setData(Uri.parse("smsto:" + mobileNumber));
+//        intent.putExtra("sms_body", message);
+//        if (intent.resolveActivity(getPackageManager()) != null) {
+//            startActivityForResult(intent, 5002);
+//        }
+    }
+
+
 
     private void finishActivity() {
         setResult(RESULT_OK);

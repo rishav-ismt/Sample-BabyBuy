@@ -9,7 +9,7 @@ import androidx.room.Update;
 import java.util.List;
 
 /**
- * Created by Rishav Chudal on 02/01/2023.
+ * Created  on 02/01/2023.
  */
 @Dao
 public interface ProductDao {

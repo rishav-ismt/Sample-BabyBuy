@@ -3,7 +3,7 @@ package np.com.yourname.babybuy;
 import java.io.Serializable;
 
 /**
- * Created by Rishav Chudal on 23/11/2022.
+ * Created  on 23/11/2022.
  */
 public class UserCredentials implements Serializable {
     private final String userEmail;

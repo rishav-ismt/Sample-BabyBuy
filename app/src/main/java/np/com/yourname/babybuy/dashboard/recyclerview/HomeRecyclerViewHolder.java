@@ -15,6 +15,8 @@ public class HomeRecyclerViewHolder
     private ImageView ivProductImage;
     private TextView tvProductTitle;
     private TextView tvProductDescription;
+    private TextView tvProductPrice;
+    private ImageView ivPurchased;
     private ConstraintLayout clProductRootLayout;
 
     public HomeRecyclerViewHolder(@NonNull View itemView) {
@@ -22,6 +24,8 @@ public class HomeRecyclerViewHolder
         ivProductImage = itemView.findViewById(R.id.iv_item_image);
         tvProductTitle = itemView.findViewById(R.id.tv_item_title);
         tvProductDescription = itemView.findViewById(R.id.tv_item_description);
+        tvProductPrice = itemView.findViewById(R.id.tv_item_price);
+        ivPurchased = itemView.findViewById(R.id.iv_purchased);
         clProductRootLayout = itemView.findViewById(R.id.cl_item_root);
     }
 
@@ -35,6 +39,14 @@ public class HomeRecyclerViewHolder
 
     public TextView getTvProductDescription() {
         return tvProductDescription;
+    }
+
+    public TextView getTvProductPrice() {
+        return tvProductPrice;
+    }
+
+    public ImageView getIvPurchased() {
+        return ivPurchased;
     }
 
     public ConstraintLayout getClProductRootLayout() {

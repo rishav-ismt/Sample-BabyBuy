@@ -15,8 +15,8 @@ public interface UserDao {
     @Insert
     void insertUser(User user);
 
-    @Query("Select * from user_table where email_data = :email Limit 1")
-    User getUserByEmail(String email);
+    @Query("Select * from user_table where email = :email and password = :password LIMIT 1")
+    User getUserByLoginCredentials(String email, String password);
 
     @Delete
     void deleteUser(User user);

@@ -3,7 +3,7 @@ package np.com.yourname.babybuy.utility;
 import android.graphics.Bitmap;
 
 /**
- * Created by Rishav Chudal on 01/01/2023.
+ * Created  on 01/01/2023.
  */
 public class BitmapScalar {
     // scale and keep aspect ratio
